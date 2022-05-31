@@ -27,10 +27,8 @@ int login(char *input_user, char *input_password)
     {
         while (fgets(line, 1000, file) != NULL)
         {
-            printf("\nLine: %s\n", line);
-            printf("Input Line: %s\n\n", input_user);
-            printf("%d",strcmp(input_user, line));
 
+            line[strlen(line)-1]='\0';
             if ((strcmp(input_user, line) == 0))
             {
                 result = 1;
