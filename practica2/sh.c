@@ -13,10 +13,15 @@ int main()
     {
         printf(">");
         scanf("%s",cmd);
+        if(strcmp(cmd,"shut")==0){
+            /*
+            EXIT HERE AND GETTY
+            */
+        }
         pid=fork();
         if(pid==0){
             execlp(cmd,cmd,NULL);
         }
         wait(NULL);
-    } while (strcmp(cmd, "shutdown") != 0);
+    } while (strcmp(cmd, "exit") != 0 );
 }
