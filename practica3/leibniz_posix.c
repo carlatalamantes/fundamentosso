@@ -9,40 +9,35 @@
 #define ITERATIONS 1000
 #define NTHREADS 4
 
+long double pi_sum[NTHREADS];
+long double denominator=0.0;
+
 void *tfunc(void *args)
 {
     // Leibniz variables
     long double pi = 1.0;
-    double denominator;
     long int i;
 
     // Thread variables
     int nthread = *((int *)args);
     long long start = (ITERATIONS / NTHREADS) * nthread;
     long long end = (ITERATIONS / NTHREADS) * (nthread + 1);
-    int j;
 
-    //printf("Hilo %d. Itervalo %lld - %lld\n",nthread,start,end);
-    // Thread logic
-    for (j = start; j < end; j++)
+    for (i = start; i < end; i++)
     {
         // Leibniz logic
-        for (i = 0; i < ITERATIONS; i++)
+        denominator = i * 2 + 3;
+        if (i % 2 == 0)
         {
-            denominator = i * 2 + 3;
-            if (i % 2 == 0)
-            {
-                pi -= (1 / denominator);
-            }
-            else
-            {
-                pi += (1 / denominator);
-            }
+            pi -= (1 / denominator);
         }
+        else
+        {
+            pi += (1 / denominator);
+        }
+         printf("%Lf \n",pi);
     }
-
-    pi *= 4;
-    printf("PI number is %Lf \n", pi);
+    pi_sum[nthread] = pi;
 }
 
 int main()
@@ -57,6 +52,9 @@ int main()
     int i;
     int args[NTHREADS];
     pthread_t tid[NTHREADS];
+
+    //Pi variable
+    long double final_pi=0.0;
 
     // Getting start time
     gettimeofday(&ts, NULL);
@@ -75,6 +73,15 @@ int main()
         args[i] = i;
         pthread_join(tid[i], NULL);
     }
+
+    // Getting pi
+    for (i = 0; i < NTHREADS; i++)
+    {
+        //printf("%Lf \n",final_pi);
+       final_pi=final_pi+pi_sum[i];
+    }
+    
+    printf("PI number is %Lf \n",final_pi);
 
     // Getting end time
     gettimeofday(&ts, NULL);
