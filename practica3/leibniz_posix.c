@@ -10,13 +10,14 @@
 #define NTHREADS 4
 
 long double pi_sum[NTHREADS];
-long double denominator=0.0;
+double denominator=0;
 
 void *tfunc(void *args)
 {
     // Leibniz variables
     long double pi = 1.0;
     long int i;
+    long int j;
 
     // Thread variables
     int nthread = *((int *)args);
@@ -35,8 +36,8 @@ void *tfunc(void *args)
         {
             pi += (1 / denominator);
         }
-         printf("%Lf \n",pi);
-    }
+    } 
+       
     pi_sum[nthread] = pi;
 }
 

@@ -37,7 +37,6 @@ int main()
         {
             pi += (1 / denominator);
         }
-        printf("%Lf \n",pi);
     }
 
     pi *= 4;
