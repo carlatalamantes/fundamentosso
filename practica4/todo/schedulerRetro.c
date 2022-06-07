@@ -1,27 +1,34 @@
 #include <scheduler.h>
 
+#define QUEUES 10
+
+
 extern THANDLER threads[MAXTHREAD];
 extern int currthread;
 extern int blockevent;
 extern int unblockevent;
 
+//QUEUE ready[QUEUES];
 QUEUE ready;
 QUEUE waitinginevent[MAXTHREAD];
+
+//int currprior;
 
 void scheduler(int arguments)
 {
 	int old,next;
 	int changethread=0;
 	int waitingthread=0;
+	int i;
+	int nextlevel;
 	
 	int event=arguments & 0xFF00;
 	int callingthread=arguments & 0xFF;
 
 	if(event==NEWTHREAD)
 	{
-		// Un nuevo hilo va a la cola de listos
 		threads[callingthread].status=READY;
-		_enqueue(&ready,callingthread);
+		//_enqueue(&ready[0],callingthread);
 	}
 	
 	if(event==BLOCKTHREAD)

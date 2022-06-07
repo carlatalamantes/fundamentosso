@@ -1,5 +1,8 @@
 #include <scheduler.h>
 
+//Set max quantums
+#define QUANTUM 2
+
 extern THANDLER threads[MAXTHREAD];
 extern int currthread;
 extern int blockevent;
@@ -7,6 +10,9 @@ extern int unblockevent;
 
 QUEUE ready;
 QUEUE waitinginevent[MAXTHREAD];
+
+//Global counter for quantum
+int quantum=0;
 
 void scheduler(int arguments)
 {
@@ -16,10 +22,13 @@ void scheduler(int arguments)
 	
 	int event=arguments & 0xFF00;
 	int callingthread=arguments & 0xFF;
+	
+	
+	
+	
 
 	if(event==NEWTHREAD)
 	{
-		// Un nuevo hilo va a la cola de listos
 		threads[callingthread].status=READY;
 		_enqueue(&ready,callingthread);
 	}
@@ -29,7 +38,6 @@ void scheduler(int arguments)
 
 		threads[callingthread].status=BLOCKED;
 		_enqueue(&waitinginevent[blockevent],callingthread);
-
 		changethread=1;
 	}
 
@@ -43,6 +51,22 @@ void scheduler(int arguments)
 	{
 			threads[callingthread].status=READY;
 			_enqueue(&ready,callingthread);
+	}
+	
+	if(event==TIMER)
+	{
+		//Increment quantum by one
+		quantum+=1;
+		
+		if(quantum==QUANTUM)
+		{
+			threads[callingthread].status=READY;
+			_enqueue(&ready,callingthread);
+			changethread=1;
+			//Reset quantum
+			quantum=0; 
+		}
+		
 	}
 
 	
