@@ -12,6 +12,8 @@
 #define PROCESSCOUNT 4
 #define VELPROD 100000	
 #define VELCONS 1000000
+#define LIMITE 100
+#define FIN 0
 
 /*
 * - 4 procesos que buscan números primos (buscadores)
@@ -84,7 +86,7 @@ int main(int argc, char *argv[])
 	int chunk_size = round((float)count_range / PROCESSCOUNT);
 	int start_limit = 0;
 	int end_limit = 0;
-	for (int i = 0; i < PROCESSCOUNT; i++)
+	for (int i = 0; i < 4; i++)
 	{
 		if (fork() == 0)
 		{
@@ -93,11 +95,6 @@ int main(int argc, char *argv[])
 			if(end_limit>count_range){
 				end_limit=count_range-1;
 			}
-			for (int j = start_limit; j <= end_limit; j++)
-			{
-				/* code */
-			}
-			
 			buscador(start_limit, end_limit, availableNumbers);
 		}
 	}
@@ -107,7 +104,7 @@ int main(int argc, char *argv[])
 		mostrador(end_range);
 	}
 
-	for (int i = 0; i < PROCESSCOUNT + 1; i++)
+	for (int i = 0; i < 5; i++)
 	{
 		wait(NULL);
 	}
@@ -138,48 +135,41 @@ int isPrime(int n)
 
 void buscador(int start, int end, int numbers[])
 {
-	int i;
-	for (i = start; i <= end; i++)
-	{
-		printf("I %d \n",i);
-		printf("END %d \n",end);
-		if (isPrime(numbers[i]) || numbers[i]==numbers[end])
-		{
-			printf("NUMBER: %d\n",numbers[i]);
-			semwait(semarr, E_MAX);
-			semwait(semarr, S_EXMUT);
+	int n;
 
-			if (numbers[i]!=numbers[end])
+    printf("Inicia productor\n");
+    for(n=1;n<=LIMITE;n++)
+    {
+		if(isPrime(n) || n==LIMITE)
+		{
+			semwait(semarr,E_MAX);	// Si se llena el buffer se bloquea
+        	semwait(semarr,S_EXMUT);	// Asegurar el buffer como sección crítoca
+
+			if(n!=LIMITE)
 			{
-				printf("Aquiiiiii \n");
-				bf->buffer[bf->ent] = numbers[i];
-				printf("Buscador found %d\n",numbers[i]);
+        		bf->buffer[bf->ent]=n;				// Poner el número primo encontrado en el buffer
+				printf("Productor produce %d\n",n);
 			}
 			else
-			{
-				bf->buffer[bf->ent] = 0;
-				printf("entre en el else\n");
-			}
-
+				bf->buffer[bf->ent]=FIN;	// Si llegué al límite voy a poner 0 en el buffer
+										// El 0 significa FIN o terminado
+			
 			bf->ent++;
-			if(bf->ent==TAMBUFFER){
+			if(bf->ent==TAMBUFFER)	// Si TAMBUFFER es 5, 0 1 2 3 4
 				bf->ent=0;
-			}	
-				
 			
-			
-			usleep(rand()%VELPROD);
+			// bf->ent = (bf->ent + 1) % TAMBUFFER;
+		
+ 
+        	usleep(rand()%VELPROD);
 		
         	semsignal(semarr,S_EXMUT);	// Libera la sección crítica del buffer
         	semsignal(semarr,N_BLOK);	// Si el consumidor está bloqueado porque el buffer está vacío, lo desbloqueas
 
         	usleep(rand()%VELPROD);
-		
-			
 		}
-	i+=1;
-	}
-	exit(0);
+    }
+    exit(0);
 }
 
 void mostrador(int end)
