@@ -9,23 +9,20 @@
 #include "semaphoresarr.h"
 
 #define TAMBUFFER 10
-#define VELBUSC 100000
-#define VELMOST 1000000
+#define PROCESSCOUNT 4
+#define VELPROD 100000	
+#define VELCONS 1000000
 
 /*
 * - 4 procesos que buscan números primos (buscadores)
 * - 1 proceso que recibe los numeros, los guarda en una lista encadenada y los enseña en orden ascendente (mostrador)
-
-DUDASSSS
- Rango de números primos se divide en 4 procesos?
- Mostrador es implementar funciones de lista enlazada con un struct vdd
 */
 
 struct STRBUFF
 {
-	int ent;				// Donde va a estar el siguiente elemento que voy a meter al buffer
-	int sal;				// Donde está el siguiente elemento que voy a sacar del buffer
-	char buffer[TAMBUFFER]; // Buffer circular
+	int ent;			
+	int sal;				
+	int buffer[TAMBUFFER]; 
 };
 
 struct STRBUFF *bf;
@@ -37,7 +34,7 @@ enum
 	E_MAX,
 	N_BLOK,
 	S_EXMUT
-}; // Semáforos 0,1 y 2
+}; 
 
 struct PRIMELIST
 {
@@ -48,7 +45,7 @@ struct PRIMELIST
 struct PRIMELIST *l;
 
 int isPrime(int n);
-void buscador(int start, int end,int numbers[],int max);
+void buscador(int start, int end, int numbers[]);
 void mostrador(int end);
 void printList(struct PRIMELIST *list);
 void addNumberList(int n);
@@ -84,27 +81,33 @@ int main(int argc, char *argv[])
 	/*
 	 * Loop to create 4 processes
 	 */
-	int chunk_size = round((float)count_range/4); 
-	printf("CHUNKKK %d\n",chunk_size);
+	int chunk_size = round((float)count_range / PROCESSCOUNT);
 	int start_limit = 0;
 	int end_limit = 0;
-	for (int i = 0; i < 4; i++)
+	for (int i = 0; i < PROCESSCOUNT; i++)
 	{
 		if (fork() == 0)
 		{
 			start_limit = i * chunk_size;
 			end_limit = start_limit + chunk_size - 1;
-			buscador(start_limit,end_limit,availableNumbers,end_range);
+			if(end_limit>count_range){
+				end_limit=count_range-1;
+			}
+			for (int j = start_limit; j <= end_limit; j++)
+			{
+				/* code */
+			}
+			
+			buscador(start_limit, end_limit, availableNumbers);
 		}
 	}
 
-	
 	if (fork() == 0)
 	{
 		mostrador(end_range);
 	}
-	
-	for (int i = 0; i < 5; i++)
+
+	for (int i = 0; i < PROCESSCOUNT + 1; i++)
 	{
 		wait(NULL);
 	}
@@ -130,67 +133,73 @@ int isPrime(int n)
 		}
 	}
 	return isPrime;
+
 }
 
-void buscador(int start, int end, int numbers[],int max)
+void buscador(int start, int end, int numbers[])
 {
-	for (int p = start; p < end+1; p++)
-	{
-		printf("Received %d \n",numbers[p] );
-	}
-	
-	
 	int i;
-
-	for (i = start ; i < end+1; i++)
+	for (i = start; i <= end; i++)
 	{
-			printf("%d\n",i);
-
-		if (isPrime(i) || i == end)
+		printf("I %d \n",i);
+		printf("END %d \n",end);
+		if (isPrime(numbers[i]) || numbers[i]==numbers[end])
 		{
+			printf("NUMBER: %d\n",numbers[i]);
 			semwait(semarr, E_MAX);
 			semwait(semarr, S_EXMUT);
 
-			if (i != max)
+			if (numbers[i]!=numbers[end])
 			{
-				bf->buffer[bf->ent] = i;
-				//printf("Buscador found %d\n",i);
+				printf("Aquiiiiii \n");
+				bf->buffer[bf->ent] = numbers[i];
+				printf("Buscador found %d\n",numbers[i]);
 			}
 			else
 			{
 				bf->buffer[bf->ent] = 0;
+				printf("entre en el else\n");
 			}
 
 			bf->ent++;
-			if (bf->ent == TAMBUFFER)
-				bf->ent = 0;
+			if(bf->ent==TAMBUFFER){
+				bf->ent=0;
+			}	
+				
+			
+			
+			usleep(rand()%VELPROD);
+		
+        	semsignal(semarr,S_EXMUT);	// Libera la sección crítica del buffer
+        	semsignal(semarr,N_BLOK);	// Si el consumidor está bloqueado porque el buffer está vacío, lo desbloqueas
 
-			usleep(rand() % VELBUSC);
-
-			semsignal(semarr, S_EXMUT);
-			semsignal(semarr, N_BLOK);
-
-			usleep(rand() % VELBUSC);
+        	usleep(rand()%VELPROD);
+		
+			
 		}
-	} 
+	i+=1;
+	}
 	exit(0);
 }
 
 void mostrador(int end)
 {
-	printf("%d enf\n", end);
-	/*
+	printf("Mostradorrr\n");
+	/* int p_count = PROCESSCOUNT;
+	
 	int n = 1;
-	while (n != end - 1)
+	while (p_count!=0)
 	{
 		semwait(semarr, N_BLOK);  // Si el buffer está vacío, se bloquea
 		semwait(semarr, S_EXMUT); // Asegura el buffer como sección crítica
 
 		n = bf->buffer[bf->sal];
 
-		if (n)
+		if (n!=0)
 		{
 			addNumberList(n);
+		}else{
+			p_count-=1;
 		}
 
 		bf->sal++;
@@ -201,8 +210,8 @@ void mostrador(int end)
 		semsignal(semarr, E_MAX);
 	}
 
-	printList(l); */
-
+	printList(l);  
+*/
 	exit(0);
 }
 
@@ -212,7 +221,7 @@ void printList(struct PRIMELIST *list)
 	{
 		printf("%d\n", list->number);
 		list = list->next;
-	}
+	} 
 }
 
 void addNumberList(int n)
