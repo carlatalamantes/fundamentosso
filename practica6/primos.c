@@ -44,13 +44,15 @@ struct PRIMELIST
 	struct PRIMELIST *next;
 };
 
-struct PRIMELIST *l;
 
 int isPrime(int n);
 void buscador(int start, int end, int numbers[]);
 void mostrador(int end);
 void printList(struct PRIMELIST *list);
-void addNumberList(int n);
+void swap(struct PRIMELIST *a, struct PRIMELIST *b);
+void orderList(struct PRIMELIST *start);
+void insertInList(struct PRIMELIST **start_ref, int number);
+
 
 int main(int argc, char *argv[])
 {
@@ -135,59 +137,59 @@ int isPrime(int n)
 
 void buscador(int start, int end, int numbers[])
 {
-	int n;
-
-    printf("Inicia productor\n");
-    for(n=1;n<=LIMITE;n++)
-    {
-		if(isPrime(n) || n==LIMITE)
+	int i;
+	for (i = start; i <= end; i++)
+	{
+		if (isPrime(numbers[i]) || numbers[i]==numbers[end])
 		{
-			semwait(semarr,E_MAX);	// Si se llena el buffer se bloquea
-        	semwait(semarr,S_EXMUT);	// Asegurar el buffer como sección crítoca
+			semwait(semarr, E_MAX);
+			semwait(semarr, S_EXMUT);
 
-			if(n!=LIMITE)
+			if (numbers[i]!=numbers[end])
 			{
-        		bf->buffer[bf->ent]=n;				// Poner el número primo encontrado en el buffer
-				printf("Productor produce %d\n",n);
+				bf->buffer[bf->ent] = numbers[i];
 			}
 			else
-				bf->buffer[bf->ent]=FIN;	// Si llegué al límite voy a poner 0 en el buffer
-										// El 0 significa FIN o terminado
-			
+			{
+				bf->buffer[bf->ent] = 0;
+			}
+
 			bf->ent++;
-			if(bf->ent==TAMBUFFER)	// Si TAMBUFFER es 5, 0 1 2 3 4
+			if(bf->ent==TAMBUFFER){
 				bf->ent=0;
-			
-			// bf->ent = (bf->ent + 1) % TAMBUFFER;
+			}	
+				
 		
- 
-        	usleep(rand()%VELPROD);
+			usleep(rand()%VELPROD);
 		
         	semsignal(semarr,S_EXMUT);	// Libera la sección crítica del buffer
         	semsignal(semarr,N_BLOK);	// Si el consumidor está bloqueado porque el buffer está vacío, lo desbloqueas
 
         	usleep(rand()%VELPROD);
+		
+			
 		}
-    }
-    exit(0);
+	}
+	exit(0);
 }
 
 void mostrador(int end)
 {
-	printf("Mostradorrr\n");
-	/* int p_count = PROCESSCOUNT;
+	int p_count = PROCESSCOUNT;
+	struct PRIMELIST *l=NULL;
+
 	
 	int n = 1;
-	while (p_count!=0)
+	while (p_count)
 	{
-		semwait(semarr, N_BLOK);  // Si el buffer está vacío, se bloquea
-		semwait(semarr, S_EXMUT); // Asegura el buffer como sección crítica
+		semwait(semarr, N_BLOK);  
+		semwait(semarr, S_EXMUT); 
 
 		n = bf->buffer[bf->sal];
 
-		if (n!=0)
+		if (n)
 		{
-			addNumberList(n);
+			insertInList(&l,n);
 		}else{
 			p_count-=1;
 		}
@@ -199,38 +201,61 @@ void mostrador(int end)
 		semsignal(semarr, S_EXMUT);
 		semsignal(semarr, E_MAX);
 	}
-
+	orderList(l);
 	printList(l);  
-*/
 	exit(0);
 }
 
 void printList(struct PRIMELIST *list)
 {
-	while (list != NULL)
+	struct PRIMELIST *aux=list;
+	while (aux != NULL)
 	{
-		printf("%d\n", list->number);
-		list = list->next;
+		printf("%d\n", aux->number);
+		aux = aux->next;
 	} 
 }
 
-void addNumberList(int n)
-{
-	struct PRIMELIST *current, *next;
-	current = (struct PRIMELIST *)malloc(sizeof(struct PRIMELIST));
-	int aux;
+void insertInList(struct PRIMELIST **start_ref, int number) 
+{ 
+    struct PRIMELIST *ptr1 = (struct PRIMELIST*)malloc(sizeof(struct PRIMELIST)); 
+    ptr1->number = number; 
+    ptr1->next = *start_ref; 
+    *start_ref = ptr1; 
+} 
 
-	if (l == NULL)
-	{
-		current->number = n;
-		current->next = NULL;
-		l = current;
-	}
-	else
-	{
-		current = l;
-		while (current != NULL)
-		{
-		}
-	}
-}
+void orderList(struct PRIMELIST *start) 
+{ 
+    int swapped, i; 
+    struct PRIMELIST *ptr1; 
+    struct PRIMELIST *lptr = NULL; 
+  
+    if (start == NULL) 
+        return; 
+  
+    do
+    { 
+        swapped = 0; 
+        ptr1 = start; 
+  
+        while (ptr1->next != lptr) 
+        { 
+            if (ptr1->number > ptr1->next->number) 
+            {
+                swap(ptr1, ptr1->next); 
+                swapped = 1; 
+            } 
+            ptr1 = ptr1->next; 
+        } 
+        lptr = ptr1; 
+    } 
+    while (swapped); 
+} 
+  
+void swap(struct PRIMELIST *a, struct PRIMELIST *b) 
+{ 
+    int temp = a->number; 
+    a->number = b->number; 
+    b->number = temp; 
+} 
+
