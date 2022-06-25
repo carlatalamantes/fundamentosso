@@ -73,11 +73,11 @@ int main(int argc, char *argv[])
 	/*
 	 * Loop to fill array with numbers between the range
 	 */
-	for (int i = 0; i < count_range; i++)
+	for (int i = 0; i < count_range+1; i++)
 	{
-		for (int j = start_range; j < end_range; j++)
+		for (int j = start_range; j < end_range+1; j++)
 		{
-			availableNumbers[i] = j + 1;
+			availableNumbers[i] = j;
 			i++;
 		}
 	}
@@ -95,7 +95,7 @@ int main(int argc, char *argv[])
 			start_limit = i * chunk_size;
 			end_limit = start_limit + chunk_size - 1;
 			if(end_limit>count_range){
-				end_limit=count_range-1;
+				end_limit=count_range;
 			}
 			buscador(start_limit, end_limit, availableNumbers);
 		}
@@ -120,19 +120,23 @@ int main(int argc, char *argv[])
 
 int isPrime(int n)
 {
-	int isPrime = 1;
-	int i;
-
-	for (i = 2; i <= n / 2; i++)
+	int d=3;
+	int prime=0;
+	int limit=sqrt(n);
+	
+	if(n<2)
+		prime=0;
+	else if(n==2)
+		prime=1;
+	else if(n%2==0)
+		prime=0;
+	else
 	{
-		if (n % i == 0)
-		{
-			isPrime = 0;
-			break;
-		}
+		while(d<=limit && n%d)
+			d+=2;
+		prime=d>limit;
 	}
-	return isPrime;
-
+	return(prime);
 }
 
 void buscador(int start, int end, int numbers[])
@@ -140,6 +144,8 @@ void buscador(int start, int end, int numbers[])
 	int i;
 	for (i = start; i <= end; i++)
 	{
+			
+
 		if (isPrime(numbers[i]) || numbers[i]==numbers[end])
 		{
 			semwait(semarr, E_MAX);
@@ -151,6 +157,9 @@ void buscador(int start, int end, int numbers[])
 			}
 			else
 			{
+				if(isPrime(numbers[i])){
+					bf->buffer[bf->ent] = numbers[i];
+				}
 				bf->buffer[bf->ent] = 0;
 			}
 
@@ -189,6 +198,7 @@ void mostrador(int end)
 
 		if (n)
 		{
+			printf("Insertando %d\n",n);
 			insertInList(&l,n);
 		}else{
 			p_count-=1;
