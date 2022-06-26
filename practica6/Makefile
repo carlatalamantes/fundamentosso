@@ -1,4 +1,9 @@
-all: primos
+all: primossem primosmsg
 
-primos:
-	gcc -o primos primos.c semaphoresarr.c -lm
+primossem: primossem.c
+	gcc -o primossem primossem.c semaphoresarr.c -lm
+
+primosmsg: rimosmsg.c
+	gcc -o primosmsg primosmsg.c semaphoresarr.c -lm
+
+clean: rm primossem primosmsg
