@@ -8,11 +8,7 @@
 #include <math.h>
 #include "semaphoresarr.h"
 
-#define TAMBUFFER 10
 #define PROCESSCOUNT 4
-#define VELPROD 100000	
-#define VELCONS 1000000
-#define LIMITE 100
 #define FIN 0
 
 /*
@@ -20,30 +16,11 @@
 * - 1 proceso que recibe los numeros, los guarda en una lista encadenada y los enseña en orden ascendente (mostrador)
 */
 
-struct STRBUFF
-{
-	int ent;			
-	int sal;				
-	int buffer[TAMBUFFER]; 
-};
-
-struct STRBUFF *bf;
-
-SEM_ID semarr;
-
-enum
-{
-	E_MAX,
-	N_BLOK,
-	S_EXMUT
-}; 
-
 struct PRIMELIST
 {
 	int number;
 	struct PRIMELIST *next;
 };
-
 
 int isPrime(int n);
 void buscador(int start, int end, int numbers[]);
@@ -53,6 +30,9 @@ void swap(struct PRIMELIST *a, struct PRIMELIST *b);
 void orderList(struct PRIMELIST *start);
 void insertInList(struct PRIMELIST **start_ref, int number);
 
+int p_count = PROCESSCOUNT;
+struct PRIMELIST *plist=NULL;
+
 
 int main(int argc, char *argv[])
 {
@@ -60,15 +40,6 @@ int main(int argc, char *argv[])
 	int end_range = atoi(argv[2]);
 	int count_range = (end_range - start_range);
 	int availableNumbers[count_range];
-	int shared_mem_id;
-
-	semarr = createsemarray((key_t)0x4008, 3);
-	initsem(semarr, E_MAX, TAMBUFFER);
-	initsem(semarr, N_BLOK, 0);
-	initsem(semarr, S_EXMUT, 1);
-
-	shared_mem_id = shmget((key_t)0x6812, sizeof(struct STRBUFF), 0666 | IPC_CREAT);
-	bf = shmat(shared_mem_id, NULL, 0);
 
 	/*
 	 * Loop to fill array with numbers between the range
@@ -111,10 +82,6 @@ int main(int argc, char *argv[])
 		wait(NULL);
 	}
 
-	erasesem(semarr);
-
-	shmdt(bf);
-	shmctl(shared_mem_id, IPC_RMID, NULL);
 	exit(0);
 }
 
@@ -140,75 +107,28 @@ void buscador(int start, int end, int numbers[])
 	int i;
 	for (i = start; i <= end; i++)
 	{
-		if (isPrime(numbers[i]) || numbers[i]==numbers[end])
+		if (isPrime(numbers[i]) )
 		{
-			semwait(semarr, E_MAX);
-			semwait(semarr, S_EXMUT);
-
-			if (numbers[i]!=numbers[end])
-			{
-				bf->buffer[bf->ent] = numbers[i];
-			}
-			else
-			{
-				bf->buffer[bf->ent] = 0;
-			}
-
-			bf->ent++;
-			if(bf->ent==TAMBUFFER){
-				bf->ent=0;
-			}	
-				
-		
-			usleep(rand()%VELPROD);
-		
-        	semsignal(semarr,S_EXMUT);	// Libera la sección crítica del buffer
-        	semsignal(semarr,N_BLOK);	// Si el consumidor está bloqueado porque el buffer está vacío, lo desbloqueas
-
-        	usleep(rand()%VELPROD);
-		
-			
+			printf("Buscador %d\n",numbers[i]);
+            insertInList(&plist,numbers[i]);	
 		}
 	}
 	exit(0);
 }
 
 void mostrador(int end)
-{
-	int p_count = PROCESSCOUNT;
-	struct PRIMELIST *l=NULL;
-
-	
-	int n = 1;
-	while (p_count)
-	{
-		semwait(semarr, N_BLOK);  
-		semwait(semarr, S_EXMUT); 
-
-		n = bf->buffer[bf->sal];
-
-		if (n)
-		{
-			insertInList(&l,n);
-		}else{
-			p_count-=1;
-		}
-
-		bf->sal++;
-		if (bf->sal == TAMBUFFER)
-			bf->sal = 0;
-
-		semsignal(semarr, S_EXMUT);
-		semsignal(semarr, E_MAX);
-	}
-	orderList(l);
-	printList(l);  
-	exit(0);
+{	
+	printf("mostrtadoooor");
+	orderList(plist);
+	printList(plist);
+	exit(0);   
+   
 }
 
 void printList(struct PRIMELIST *list)
 {
 	struct PRIMELIST *aux=list;
+	printf("jeje %d",aux->number);
 	while (aux != NULL)
 	{
 		printf("%d\n", aux->number);
@@ -220,8 +140,9 @@ void insertInList(struct PRIMELIST **start_ref, int number)
 { 
     struct PRIMELIST *ptr1 = (struct PRIMELIST*)malloc(sizeof(struct PRIMELIST)); 
     ptr1->number = number; 
-    ptr1->next = *start_ref; 
+    ptr1->next = *start_ref;
     *start_ref = ptr1; 
+	printf("%d\n",(*start_ref)->number);
 } 
 
 void orderList(struct PRIMELIST *start) 

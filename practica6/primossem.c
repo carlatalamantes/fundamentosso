@@ -198,7 +198,6 @@ void mostrador(int end)
 
 		if (n)
 		{
-			printf("Insertando %d\n",n);
 			insertInList(&l,n);
 		}else{
 			p_count-=1;
